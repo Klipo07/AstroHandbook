@@ -14,6 +14,7 @@ import kotlin.math.sin
 class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private val square = Square()
+    private val transparentCube = TransparentCube()
 
     // Сферы планет
     private lateinit var sunSphere: Sphere
@@ -25,12 +26,12 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     // Данные планет
     private val planets = listOf(
-        Planet(0.8f, 0f, 0f, R.drawable.sun, "Солнце"),
-        Planet(0.15f, 2.0f, 0.5f, R.drawable.mercury, "Меркурий"),
-        Planet(0.18f, 2.8f, 0.35f, R.drawable.venus, "Венера"),
-        Planet(0.2f, 3.6f, 0.25f, R.drawable.earth, "Земля"),
-        Planet(0.17f, 4.4f, 0.2f, R.drawable.mars, "Марс"),
-        Planet(0.06f, 0.5f, 1.2f, R.drawable.moon, "Луна")
+        Planet(0.8f, 0f, 0f, R.drawable.sun, "Солнце", ""),
+        Planet(0.15f, 2.0f, 0.5f, R.drawable.mercury, "Меркурий", ""),
+        Planet(0.18f, 2.8f, 0.35f, R.drawable.venus, "Венера", ""),
+        Planet(0.2f, 3.6f, 0.25f, R.drawable.earth, "Земля", ""),
+        Planet(0.17f, 4.4f, 0.2f, R.drawable.mars, "Марс", ""),
+        Planet(0.06f, 0.5f, 1.2f, R.drawable.moon, "Луна", "")
     )
 
     // Текстуры
@@ -49,6 +50,16 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var mvpMatrixHandle = 0
 
     private var startTime = System.currentTimeMillis()
+
+    // Индекс выбранной планеты
+    private var selectedPlanetIndex = 0
+
+    // Координаты планет для выделения
+    private val planetPositions = mutableMapOf<Int, Triple<Float, Float, Float>>()
+
+    fun setSelectedPlanetIndex(index: Int) {
+        selectedPlanetIndex = index
+    }
 
     override fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -128,6 +139,9 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         drawBackground()
         drawSolarSystem()
+
+        // Рисуем выделение для выбранной планеты
+        drawSelection()
     }
 
     private fun drawBackground() {
@@ -152,64 +166,91 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         val time = (System.currentTimeMillis() - startTime).toFloat() * 0.002f
 
         // Солнце
+        savePlanetPosition(0, 0f, 0f, 0f)
         drawPlanetAtPosition(sunSphere, planets[0], 0f, 0f, 0f)
 
         // Меркурий
         val mercuryAngle = time * planets[1].speed
-        drawPlanetAtAngle(mercurySphere, planets[1], mercuryAngle, 0f)
+        val mercuryX = planets[1].orbitRadius * cos(mercuryAngle)
+        val mercuryZ = planets[1].orbitRadius * sin(mercuryAngle)
+        savePlanetPosition(1, mercuryX, 0f, mercuryZ)
+        drawPlanetAtPosition(mercurySphere, planets[1], mercuryX, 0f, mercuryZ)
 
         // Венера
         val venusAngle = time * planets[2].speed
-        drawPlanetAtAngle(venusSphere, planets[2], venusAngle, 0f)
+        val venusX = planets[2].orbitRadius * cos(venusAngle)
+        val venusZ = planets[2].orbitRadius * sin(venusAngle)
+        savePlanetPosition(2, venusX, 0f, venusZ)
+        drawPlanetAtPosition(venusSphere, planets[2], venusX, 0f, venusZ)
 
         // Земля
         val earthAngle = time * planets[3].speed
         val earthX = planets[3].orbitRadius * cos(earthAngle)
         val earthZ = planets[3].orbitRadius * sin(earthAngle)
+        savePlanetPosition(3, earthX, 0f, earthZ)
         drawPlanetAtPosition(earthSphere, planets[3], earthX, 0f, earthZ)
 
         // Луна (вокруг Земли, перпендикулярно)
         val moonAngle = time * planets[5].speed * 3f
         val moonX = earthX + planets[5].orbitRadius * cos(moonAngle)
-        val moonY = planets[5].orbitRadius * 0.8f * sin(moonAngle) // Перпендикулярно!
+        val moonY = planets[5].orbitRadius * 0.8f * sin(moonAngle)
         val moonZ = earthZ + planets[5].orbitRadius * sin(moonAngle) * 0.5f
+        savePlanetPosition(5, moonX, moonY, moonZ)
         drawPlanetAtPosition(moonSphere, planets[5], moonX, moonY, moonZ)
 
         // Марс
         val marsAngle = time * planets[4].speed
-        drawPlanetAtAngle(marsSphere, planets[4], marsAngle, 0f)
+        val marsX = planets[4].orbitRadius * cos(marsAngle)
+        val marsZ = planets[4].orbitRadius * sin(marsAngle)
+        savePlanetPosition(4, marsX, 0f, marsZ)
+        drawPlanetAtPosition(marsSphere, planets[4], marsX, 0f, marsZ)
     }
 
-    // Функция для рисования планеты по углу (круговая орбита)
-    private fun drawPlanetAtAngle(sphere: Sphere, planet: Planet, angle: Float, verticalOffset: Float) {
-        if (planet.orbitRadius == 0f) return
+    private fun savePlanetPosition(index: Int, x: Float, y: Float, z: Float) {
+        planetPositions[index] = Triple(x, y, z)
+    }
 
-        val x = planet.orbitRadius * cos(angle)
-        val z = planet.orbitRadius * sin(angle)
+    private fun drawSelection() {
+        val position = planetPositions[selectedPlanetIndex] ?: return
+
+        // Сохраняем текущие настройки
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+
+        // Устанавливаем цвет для куба (белый с прозрачностью)
+        val colorHandle = GLES20.glGetUniformLocation(program, "uColor")
+        GLES20.glUniform4f(colorHandle, 1.0f, 1.0f, 1.0f, 0.3f)
 
         Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.translateM(modelMatrix, 0, x, verticalOffset, z)
+        Matrix.translateM(modelMatrix, 0, position.first, position.second, position.third)
 
-        // Вращение вокруг своей оси
-        Matrix.rotateM(modelMatrix, 0, angle * 10f, 0f, 1f, 0f)
+        // Масштабируем куб под размер планеты
+        val planetRadius = planets[selectedPlanetIndex].radius
+        Matrix.scaleM(modelMatrix, 0, planetRadius * 1.5f, planetRadius * 1.5f, planetRadius * 1.5f)
 
-        applyTextureAndDraw(sphere, planet)
+        Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0)
+        Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
+
+        GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
+
+        // Отключаем текстуру для куба
+        val useTextureHandle = GLES20.glGetUniformLocation(program, "uUseTexture")
+        GLES20.glUniform1i(useTextureHandle, 0)
+
+        transparentCube.draw(positionHandle)
+
+        // Восстанавливаем настройки
+        GLES20.glDisable(GLES20.GL_BLEND)
+        GLES20.glUniform1i(useTextureHandle, 1)
     }
 
-    // Функция для рисования планеты по конкретным координатам
     private fun drawPlanetAtPosition(sphere: Sphere, planet: Planet, x: Float, y: Float, z: Float) {
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.translateM(modelMatrix, 0, x, y, z)
 
-        // Вращение вокруг своей оси
         val time = (System.currentTimeMillis() - startTime).toFloat() * 0.001f
         Matrix.rotateM(modelMatrix, 0, time * 20f, 0f, 1f, 0f)
 
-        applyTextureAndDraw(sphere, planet)
-    }
-
-    // Общая функция для применения текстуры и рисования
-    private fun applyTextureAndDraw(sphere: Sphere, planet: Planet) {
         Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0)
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
 
@@ -221,6 +262,9 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
             val textureUniform = GLES20.glGetUniformLocation(program, "uTexture")
             GLES20.glUniform1i(textureUniform, 0)
         }
+
+        val useTextureHandle = GLES20.glGetUniformLocation(program, "uUseTexture")
+        GLES20.glUniform1i(useTextureHandle, 1)
 
         sphere.draw(positionHandle, texCoordHandle)
     }
@@ -238,12 +282,15 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
             attribute vec2 aTexCoord;
             
             uniform mat4 uMVPMatrix;
+            uniform vec4 uColor;
             
             varying vec2 vTexCoord;
+            varying vec4 vColor;
             
             void main() {
                 gl_Position = uMVPMatrix * vec4(aPosition, 1.0);
                 vTexCoord = aTexCoord;
+                vColor = uColor;
             }
         """.trimIndent()
     }
@@ -253,11 +300,17 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
             precision mediump float;
             
             varying vec2 vTexCoord;
+            varying vec4 vColor;
             
             uniform sampler2D uTexture;
+            uniform bool uUseTexture;
             
             void main() {
-                gl_FragColor = texture2D(uTexture, vTexCoord);
+                if (uUseTexture) {
+                    gl_FragColor = texture2D(uTexture, vTexCoord);
+                } else {
+                    gl_FragColor = vColor;
+                }
             }
         """.trimIndent()
     }
