@@ -28,19 +28,21 @@ import androidx.compose.ui.graphics.Color
 fun OpenGLScreen(
     onBackClick: () -> Unit,
     onMoonScreenRequested: () -> Unit,
-    onPlanetInfoRequested: (String) -> Unit  // Новый параметр для информации о планете
+    onNeptuneScreenRequested: () -> Unit,  // Новый параметр для Нептуна
+    onPlanetInfoRequested: (String) -> Unit
 ) {
     val context = LocalContext.current
     var selectedPlanetIndex by remember { mutableIntStateOf(0) } // 0 = Солнце
 
-    // Список планет для информации
+    // Список планет для информации (ДОБАВИЛИ НЕПТУН)
     val planets = listOf(
         Planet(0.8f, 0f, 0f, R.drawable.sun, "Солнце", ""),
         Planet(0.15f, 2.0f, 0.5f, R.drawable.mercury, "Меркурий", ""),
         Planet(0.18f, 2.8f, 0.35f, R.drawable.venus, "Венера", ""),
         Planet(0.2f, 3.6f, 0.25f, R.drawable.earth, "Земля", ""),
         Planet(0.17f, 4.4f, 0.2f, R.drawable.mars, "Марс", ""),
-        Planet(0.06f, 0.5f, 1.2f, R.drawable.moon, "Луна", "")
+        Planet(0.06f, 0.5f, 1.2f, R.drawable.moon, "Луна", ""),
+        Planet(0.19f, 5.2f, 0.15f, R.drawable.neptune, "Нептун", "")  // Нептун
     )
 
     // Создаем рендерер с возможностью обновления выбранной планеты
@@ -85,12 +87,13 @@ fun OpenGLScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Кнопка информации - теперь с выбором экрана
+            // Кнопка информации - с выбором экрана
             Button(
                 onClick = {
                     val planet = planets[selectedPlanetIndex]
                     when (planet.name) {
                         "Луна" -> onMoonScreenRequested()
+                        "Нептун" -> onNeptuneScreenRequested()  // Для Нептуна открываем водный экран
                         else -> onPlanetInfoRequested(planet.name)
                     }
                 },
@@ -139,15 +142,19 @@ fun OpenGLScreen(
                 color = Color.White
             )
 
-            // Подсказка
-            if (planets[selectedPlanetIndex].name == "Луна") {
-                Text(
+            // Подсказки
+            when (planets[selectedPlanetIndex].name) {
+                "Луна" -> Text(
                     text = "Нажмите Информация для 3D Луны",
                     modifier = Modifier.padding(8.dp),
                     color = Color.Yellow
                 )
-            } else {
-                Text(
+                "Нептун" -> Text(
+                    text = "Нажмите Информация для водной планеты",
+                    modifier = Modifier.padding(8.dp),
+                    color = Color.Cyan
+                )
+                else -> Text(
                     text = "Нажмите Информация для справки",
                     modifier = Modifier.padding(8.dp),
                     color = Color.Green

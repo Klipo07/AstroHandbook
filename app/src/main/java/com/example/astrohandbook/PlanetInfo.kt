@@ -69,6 +69,17 @@ data class PlanetInfo(
                     moons = "2 (Фобос и Деймос)",
                     atmosphere = "Углекислый газ (95%), Азот (3%), Аргон (1.6%)"
                 )
+                "Нептун" -> PlanetInfo(
+                    name = "Нептун",
+                    imageResId = R.drawable.neptune,
+                    description = "Нептун — восьмая и самая дальняя планета Солнечной системы. Названа в честь древнеримского бога морей. Интересно, что наша версия Нептуна имеет водную поверхность с динамическими волнами!",
+                    diameter = "49 244 км",
+                    distanceFromSun = "4.5 млрд км",
+                    orbitalPeriod = "165 лет",
+                    temperature = "-218°C",
+                    moons = "14 (Тритон, Нереида и др.)",
+                    atmosphere = "Водород, Гелий, Метан"
+                )
                 else -> PlanetInfo(
                     name = planetName,
                     imageResId = R.drawable.earth,
