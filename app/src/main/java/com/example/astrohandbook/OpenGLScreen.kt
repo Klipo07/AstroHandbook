@@ -16,7 +16,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 
 @Composable
 fun OpenGLScreen(
-    onBackClick: () -> Unit // Функция для возврата
+    onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -29,13 +29,11 @@ fun OpenGLScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // OpenGL поверхность на весь экран
         AndroidView(
             factory = { glSurfaceView },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Кнопка "Назад" в верхнем левом углу поверх OpenGL
         Button(
             onClick = onBackClick,
             modifier = Modifier
