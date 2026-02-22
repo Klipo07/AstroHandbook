@@ -27,7 +27,8 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun OpenGLScreen(
     onBackClick: () -> Unit,
-    onMoonScreenRequested: () -> Unit  // Новый параметр для перехода к Луне
+    onMoonScreenRequested: () -> Unit,
+    onPlanetInfoRequested: (String) -> Unit  // Новый параметр для информации о планете
 ) {
     val context = LocalContext.current
     var selectedPlanetIndex by remember { mutableIntStateOf(0) } // 0 = Солнце
@@ -84,19 +85,13 @@ fun OpenGLScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Кнопка информации - теперь с проверкой на Луну
+            // Кнопка информации - теперь с выбором экрана
             Button(
                 onClick = {
                     val planet = planets[selectedPlanetIndex]
-                    if (planet.name == "Луна") {
-                        // Открываем экран Луны с освещением по Фонгу
-                        onMoonScreenRequested()
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "${planet.name}: ${planet.getInfo()}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                    when (planet.name) {
+                        "Луна" -> onMoonScreenRequested()
+                        else -> onPlanetInfoRequested(planet.name)
                     }
                 },
                 modifier = Modifier
@@ -144,12 +139,18 @@ fun OpenGLScreen(
                 color = Color.White
             )
 
-            // Подсказка для Луны
+            // Подсказка
             if (planets[selectedPlanetIndex].name == "Луна") {
                 Text(
-                    text = "Нажмите Информация для просмотра Луны с освещением",
+                    text = "Нажмите Информация для 3D Луны",
                     modifier = Modifier.padding(8.dp),
                     color = Color.Yellow
+                )
+            } else {
+                Text(
+                    text = "Нажмите Информация для справки",
+                    modifier = Modifier.padding(8.dp),
+                    color = Color.Green
                 )
             }
         }

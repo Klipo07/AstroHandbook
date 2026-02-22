@@ -24,6 +24,8 @@ class MainActivity : ComponentActivity() {
             AstroHandbookTheme {
                 var showOpenGL by remember { mutableStateOf(false) }
                 var showMoon by remember { mutableStateOf(false) }
+                var showPlanetInfo by remember { mutableStateOf(false) }
+                var selectedPlanet by remember { mutableStateOf("") }
 
                 when {
                     showMoon -> {
@@ -31,11 +33,21 @@ class MainActivity : ComponentActivity() {
                             onBackClick = { showMoon = false }
                         )
                     }
+                    showPlanetInfo -> {
+                        PlanetInfoScreen(
+                            planetName = selectedPlanet,
+                            onBackClick = { showPlanetInfo = false }
+                        )
+                    }
                     showOpenGL -> {
                         OpenGLScreen(
                             onBackClick = { showOpenGL = false },
                             onMoonScreenRequested = {
                                 showMoon = true
+                            },
+                            onPlanetInfoRequested = { planetName ->
+                                selectedPlanet = planetName
+                                showPlanetInfo = true
                             }
                         )
                     }
