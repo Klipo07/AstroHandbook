@@ -23,42 +23,51 @@ class MainActivity : ComponentActivity() {
         setContent {
             AstroHandbookTheme {
                 var showOpenGL by remember { mutableStateOf(false) }
+                var showMoon by remember { mutableStateOf(false) }
 
-                if (showOpenGL) {
-                    // Передаем функцию для возврата
-                    OpenGLScreen(
-                        onBackClick = { showOpenGL = false }
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // MainScreen занимает 80% экрана
-                        Box(
-                            modifier = Modifier.weight(8f)
-                        ) {
-                            MainScreen()
-                        }
-
-                        // Кнопка перехода на 3D
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Button(
-                                onClick = { showOpenGL = true },
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                Text(
-                                    text = "🚀 Открыть 3D сцену",
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                )
+                when {
+                    showMoon -> {
+                        MoonScreen(
+                            onBackClick = { showMoon = false }
+                        )
+                    }
+                    showOpenGL -> {
+                        OpenGLScreen(
+                            onBackClick = { showOpenGL = false },
+                            onMoonScreenRequested = {
+                                showMoon = true
                             }
-                        }
+                        )
+                    }
+                    else -> {
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Box(
+                                modifier = Modifier.weight(8f)
+                            ) {
+                                MainScreen()
+                            }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Button(
+                                    onClick = { showOpenGL = true },
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Text(
+                                        text = "🚀 Открыть 3D сцену",
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
                 }
             }

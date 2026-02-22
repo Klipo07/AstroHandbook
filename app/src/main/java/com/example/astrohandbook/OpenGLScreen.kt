@@ -23,11 +23,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun OpenGLScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onMoonScreenRequested: () -> Unit  // Новый параметр для перехода к Луне
 ) {
     val context = LocalContext.current
     var selectedPlanetIndex by remember { mutableIntStateOf(0) } // 0 = Солнце
@@ -84,15 +84,20 @@ fun OpenGLScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Кнопка информации
+            // Кнопка информации - теперь с проверкой на Луну
             Button(
                 onClick = {
                     val planet = planets[selectedPlanetIndex]
-                    Toast.makeText(
-                        context,
-                        "${planet.name}: ${planet.getInfo()}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    if (planet.name == "Луна") {
+                        // Открываем экран Луны с освещением по Фонгу
+                        onMoonScreenRequested()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "${planet.name}: ${planet.getInfo()}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 },
                 modifier = Modifier
                     .padding(8.dp)
@@ -138,6 +143,15 @@ fun OpenGLScreen(
                 modifier = Modifier.padding(8.dp),
                 color = Color.White
             )
+
+            // Подсказка для Луны
+            if (planets[selectedPlanetIndex].name == "Луна") {
+                Text(
+                    text = "Нажмите Информация для просмотра Луны с освещением",
+                    modifier = Modifier.padding(8.dp),
+                    color = Color.Yellow
+                )
+            }
         }
     }
 }
