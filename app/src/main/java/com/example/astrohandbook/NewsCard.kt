@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,13 +49,14 @@ fun NewsCard(
                 .padding(4.dp)
                 .fillMaxSize(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f) // 70% непрозрачности
             ),
             shape = RoundedCornerShape(8.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
+                // Верхняя часть - 90% высоты для текста новости
                 Box(
                     modifier = Modifier
                         .weight(9f)
@@ -66,22 +68,24 @@ fun NewsCard(
                         text = newsItem.title,
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
+                        color = Color.White, // Белый текст для контраста
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
+                // Нижняя часть - 10% высоты для лайков
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                         .clickable { onLikeClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "❤️ ${newsItem.likes}",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color.White
                     )
                 }
             }

@@ -1,6 +1,7 @@
 package com.example.astrohandbook
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
     val displayedNews by viewModel.displayedNews.collectAsState()
+    var showBlackHole by remember { mutableStateOf(true) }
 
     Scaffold(
         topBar = {
@@ -35,59 +40,80 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            Button(
-                onClick = { viewModel.forceReplaceRandomNews() },
+        Box(modifier = Modifier.fillMaxSize()) {
+            // PNG черная дыра на фоне
+            if (showBlackHole) {
+                BlackHolePng(modifier = Modifier.fillMaxSize())
+            }
+
+            // Контент поверх черной дыры
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
-                Text("Тест: Сменить новость сейчас")
-            }
-
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (displayedNews.size > 0) {
-                    NewsCard(
-                        newsItem = displayedNews[0],
-                        onLikeClick = { viewModel.likeNews(0) },
-                        modifier = Modifier.weight(1f)
-                    )
+                // Кнопка для тестирования
+                Button(
+                    onClick = { showBlackHole = !showBlackHole },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    Text(if (showBlackHole) "🔘 Скрыть черную дыру (PNG)" else "🕳️ Показать черную дыру (PNG)")
                 }
 
-                if (displayedNews.size > 1) {
-                    NewsCard(
-                        newsItem = displayedNews[1],
-                        onLikeClick = { viewModel.likeNews(1) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (displayedNews.size > 2) {
-                    NewsCard(
-                        newsItem = displayedNews[2],
-                        onLikeClick = { viewModel.likeNews(2) },
-                        modifier = Modifier.weight(1f)
-                    )
+                // Тестовая кнопка смены новостей
+                Button(
+                    onClick = { viewModel.forceReplaceRandomNews() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    Text("🔄 Тест: Сменить новость сейчас")
                 }
 
-                if (displayedNews.size > 3) {
-                    NewsCard(
-                        newsItem = displayedNews[3],
-                        onLikeClick = { viewModel.likeNews(3) },
-                        modifier = Modifier.weight(1f)
-                    )
+                // Первая строка новостей
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (displayedNews.size > 0) {
+                        NewsCard(
+                            newsItem = displayedNews[0],
+                            onLikeClick = { viewModel.likeNews(0) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    if (displayedNews.size > 1) {
+                        NewsCard(
+                            newsItem = displayedNews[1],
+                            onLikeClick = { viewModel.likeNews(1) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Вторая строка новостей
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (displayedNews.size > 2) {
+                        NewsCard(
+                            newsItem = displayedNews[2],
+                            onLikeClick = { viewModel.likeNews(2) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    if (displayedNews.size > 3) {
+                        NewsCard(
+                            newsItem = displayedNews[3],
+                            onLikeClick = { viewModel.likeNews(3) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
