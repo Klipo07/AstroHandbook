@@ -1,8 +1,7 @@
-package com.example.astrohandbook // Замени на свой package
+package com.example.astrohandbook
 
-// data class автоматически генерирует equals, hashcode, toString
 data class NewsItem(
-    val id: Int,           // Уникальный идентификатор
-    val title: String,     // Текст новости
-    val likes: Int = 0     // Количество лайков (по умолчанию 0)
+    val id: Int,
+    val title: String,
+    val likes: Int = 0
 )

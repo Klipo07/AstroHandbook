@@ -1,7 +1,6 @@
 package com.example.astrohandbook
 
 object NewsRepository {
-    // Константный список из 10 новостей на астрономическую тему
     val newsList = listOf(
         NewsItem(1, "Марс: следующая цель человечества"),
         NewsItem(2, "Обнаружена новая экзопланета в зоне обитаемости"),

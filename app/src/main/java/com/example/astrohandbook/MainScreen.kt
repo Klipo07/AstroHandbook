@@ -35,29 +35,24 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             )
         }
     ) { paddingValues ->
-        // Основной контейнер с отступами от TopBar
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // ТЕСТОВАЯ КНОПКА - добавили сверху
             Button(
                 onClick = { viewModel.forceReplaceRandomNews() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp) // Отступы вокруг кнопки
+                    .padding(16.dp)
             ) {
                 Text("Тест: Сменить новость сейчас")
             }
 
-            // Сетка новостей 2x2
-            // Первая строка
             Row(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Первая колонка (индекс 0)
                 if (displayedNews.size > 0) {
                     NewsCard(
                         newsItem = displayedNews[0],
@@ -66,7 +61,6 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     )
                 }
 
-                // Вторая колонка (индекс 1)
                 if (displayedNews.size > 1) {
                     NewsCard(
                         newsItem = displayedNews[1],
@@ -76,12 +70,10 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 }
             }
 
-            // Вторая строка
             Row(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Третья колонка (индекс 2)
                 if (displayedNews.size > 2) {
                     NewsCard(
                         newsItem = displayedNews[2],
@@ -90,7 +82,6 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     )
                 }
 
-                // Четвертая колонка (индекс 3)
                 if (displayedNews.size > 3) {
                     NewsCard(
                         newsItem = displayedNews[3],

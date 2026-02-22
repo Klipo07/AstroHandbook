@@ -34,10 +34,7 @@ fun NewsCard(
     onLikeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Состояние для анимации при смене новости
     var isVisible by remember { mutableStateOf(true) }
-
-    // Когда новость меняется, проигрываем анимацию
     isVisible = true
 
     AnimatedVisibility(
@@ -58,7 +55,6 @@ fun NewsCard(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Верхняя часть - 90% высоты для текста новости
                 Box(
                     modifier = Modifier
                         .weight(9f)
@@ -74,7 +70,6 @@ fun NewsCard(
                     )
                 }
 
-                // Нижняя часть - 10% высоты для лайков
                 Box(
                     modifier = Modifier
                         .weight(1f)
