@@ -23,9 +23,9 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private lateinit var earthSphere: Sphere
     private lateinit var marsSphere: Sphere
     private lateinit var moonSphere: Sphere
-    private lateinit var neptuneSphere: Sphere  // Добавили Нептун
+    private lateinit var neptuneSphere: Sphere
 
-    // Данные планет (ДОБАВИЛИ НЕПТУН)
+    // Данные планет
     private val planets = listOf(
         Planet(0.8f, 0f, 0f, R.drawable.sun, "Солнце", ""),
         Planet(0.15f, 2.0f, 0.5f, R.drawable.mercury, "Меркурий", ""),
@@ -33,7 +33,7 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Planet(0.2f, 3.6f, 0.25f, R.drawable.earth, "Земля", ""),
         Planet(0.17f, 4.4f, 0.2f, R.drawable.mars, "Марс", ""),
         Planet(0.06f, 0.5f, 1.2f, R.drawable.moon, "Луна", ""),
-        Planet(0.19f, 5.2f, 0.15f, R.drawable.neptune, "Нептун", "")  // Нептун
+        Planet(0.19f, 5.2f, 0.15f, R.drawable.neptune, "Нептун", "")
     )
 
     // Текстуры
@@ -80,14 +80,14 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         backgroundTextureId = loadTexture(R.drawable.galaxy_texture)
 
-        // Создаем сферы (ДОБАВИЛИ НЕПТУН)
+        // Создаем сферы
         sunSphere = Sphere(planets[0].radius)
         mercurySphere = Sphere(planets[1].radius)
         venusSphere = Sphere(planets[2].radius)
         earthSphere = Sphere(planets[3].radius)
         marsSphere = Sphere(planets[4].radius)
         moonSphere = Sphere(planets[5].radius)
-        neptuneSphere = Sphere(planets[6].radius)  // Нептун
+        neptuneSphere = Sphere(planets[6].radius)
 
         // Загружаем текстуры
         planets.forEach { planet ->
@@ -134,10 +134,11 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         GLES20.glUseProgram(program)
 
+        // Устанавливаем камеру
         Matrix.setLookAtM(viewMatrix, 0,
-            0f, 3f, 12f,
-            0f, 0f, 0f,
-            0f, 1f, 0f
+            0f, 3f, 12f,  // Позиция камеры (выше и дальше)
+            0f, 0f, 0f,   // Точка, куда смотрим
+            0f, 1f, 0f    // Вектор "вверх"
         )
 
         drawBackground()
@@ -193,11 +194,12 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         savePlanetPosition(3, earthX, 0f, earthZ)
         drawPlanetAtPosition(earthSphere, planets[3], earthX, 0f, earthZ)
 
-        // Луна (вокруг Земли, перпендикулярно)
+        // ЛУНА - ПЕРПЕНДИКУЛЯРНОЕ ДВИЖЕНИЕ (ВЕРТИКАЛЬНОЕ)
         val moonAngle = time * planets[5].speed * 3f
-        val moonX = earthX + planets[5].orbitRadius * cos(moonAngle)
-        val moonY = planets[5].orbitRadius * 0.8f * sin(moonAngle)
-        val moonZ = earthZ + planets[5].orbitRadius * sin(moonAngle) * 0.5f
+        val moonX = earthX + planets[5].orbitRadius * 0.5f * cos(moonAngle)     // Небольшое смещение по X
+        val moonY = planets[5].orbitRadius * 1.2f * sin(moonAngle)              // ОСНОВНОЕ ДВИЖЕНИЕ ПО Y (вверх-вниз)
+        val moonZ = earthZ + planets[5].orbitRadius * 0.3f * sin(moonAngle)     // Небольшое смещение по Z
+
         savePlanetPosition(5, moonX, moonY, moonZ)
         drawPlanetAtPosition(moonSphere, planets[5], moonX, moonY, moonZ)
 
@@ -208,7 +210,7 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         savePlanetPosition(4, marsX, 0f, marsZ)
         drawPlanetAtPosition(marsSphere, planets[4], marsX, 0f, marsZ)
 
-        // НЕПТУН (добавили)
+        // Нептун
         val neptuneAngle = time * planets[6].speed
         val neptuneX = planets[6].orbitRadius * cos(neptuneAngle)
         val neptuneZ = planets[6].orbitRadius * sin(neptuneAngle)
@@ -223,15 +225,18 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private fun drawSelection() {
         val position = planetPositions[selectedPlanetIndex] ?: return
 
+        // Сохраняем текущие настройки
         GLES20.glEnable(GLES20.GL_BLEND)
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
 
+        // Устанавливаем цвет для куба (белый с прозрачностью)
         val colorHandle = GLES20.glGetUniformLocation(program, "uColor")
         GLES20.glUniform4f(colorHandle, 1.0f, 1.0f, 1.0f, 0.3f)
 
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.translateM(modelMatrix, 0, position.first, position.second, position.third)
 
+        // Масштабируем куб под размер планеты
         val planetRadius = planets[selectedPlanetIndex].radius
         Matrix.scaleM(modelMatrix, 0, planetRadius * 1.5f, planetRadius * 1.5f, planetRadius * 1.5f)
 
@@ -240,11 +245,13 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
 
+        // Отключаем текстуру для куба
         val useTextureHandle = GLES20.glGetUniformLocation(program, "uUseTexture")
         GLES20.glUniform1i(useTextureHandle, 0)
 
         transparentCube.draw(positionHandle)
 
+        // Восстанавливаем настройки
         GLES20.glDisable(GLES20.GL_BLEND)
         GLES20.glUniform1i(useTextureHandle, 1)
     }
@@ -253,6 +260,7 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.translateM(modelMatrix, 0, x, y, z)
 
+        // Вращение планеты вокруг своей оси
         val time = (System.currentTimeMillis() - startTime).toFloat() * 0.001f
         Matrix.rotateM(modelMatrix, 0, time * 20f, 0f, 1f, 0f)
 
@@ -261,6 +269,7 @@ class AstronomyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
 
+        // Активируем текстуру планеты
         if (planet.textureResId != 0) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureIds[planet.textureResId] ?: 0)

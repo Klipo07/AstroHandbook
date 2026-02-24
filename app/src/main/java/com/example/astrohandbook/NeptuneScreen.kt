@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun NeptuneScreen(
@@ -50,7 +51,13 @@ fun NeptuneScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Нептун - водная поверхность с волнами",
+                text = "🌊 Нептун - Водная планета",
+                color = Color.Cyan,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "Поверхность с динамическими волнами",
                 color = Color.White
             )
         }

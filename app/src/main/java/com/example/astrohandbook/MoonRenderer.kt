@@ -19,12 +19,14 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val projectionMatrix = FloatArray(16)
     private val mvMatrix = FloatArray(16)
     private val mvpMatrix = FloatArray(16)
+    private val normalMatrix = FloatArray(16)  // Матрица для нормалей
 
-    // Для освещения
+    // Параметры освещения по Фонгу
     private val lightPos = floatArrayOf(5.0f, 5.0f, 5.0f, 1.0f) // Позиция источника света
-    private val lightAmbient = floatArrayOf(0.2f, 0.2f, 0.2f, 1.0f)
-    private val lightDiffuse = floatArrayOf(1.0f, 1.0f, 1.0f, 1.0f)
-    private val lightSpecular = floatArrayOf(1.0f, 1.0f, 1.0f, 1.0f)
+    private val lightAmbient = floatArrayOf(0.2f, 0.2f, 0.2f, 1.0f)  // Фоновый свет
+    private val lightDiffuse = floatArrayOf(1.0f, 1.0f, 1.0f, 1.0f)   // Рассеянный свет
+    private val lightSpecular = floatArrayOf(1.0f, 1.0f, 1.0f, 1.0f)  // Зеркальный свет
+    private val materialShininess = 32.0f  // Блеск материала (чем больше, тем меньше блик)
 
     private var program = 0
 
@@ -33,10 +35,12 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var texCoordHandle = 0
     private var mvpMatrixHandle = 0
     private var mvMatrixHandle = 0
+    private var normalMatrixHandle = 0  // Для передачи матрицы нормалей
     private var lightPosHandle = 0
     private var lightAmbientHandle = 0
     private var lightDiffuseHandle = 0
     private var lightSpecularHandle = 0
+    private var shininessHandle = 0
 
     private var rotationAngle = 0f
 
@@ -58,13 +62,16 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         mvpMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix")
         mvMatrixHandle = GLES20.glGetUniformLocation(program, "uMVMatrix")
+        normalMatrixHandle = GLES20.glGetUniformLocation(program, "uNormalMatrix")
+
         lightPosHandle = GLES20.glGetUniformLocation(program, "uLightPos")
         lightAmbientHandle = GLES20.glGetUniformLocation(program, "uLightAmbient")
         lightDiffuseHandle = GLES20.glGetUniformLocation(program, "uLightDiffuse")
         lightSpecularHandle = GLES20.glGetUniformLocation(program, "uLightSpecular")
+        shininessHandle = GLES20.glGetUniformLocation(program, "uShininess")
 
-        // Создаем сферу Луны
-        moonSphere = MoonSphere(1.5f)
+        // Создаем сферу Луны с высоким разрешением для гладкого освещения
+        moonSphere = MoonSphere(1.5f, 128, 128)
 
         // Загружаем текстуру Луны
         moonTextureId = loadTexture(R.drawable.moon)
@@ -106,11 +113,11 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         GLES20.glUseProgram(program)
 
-        // Камера
+        // Устанавливаем камеру
         Matrix.setLookAtM(viewMatrix, 0,
-            0f, 0f, 8f,
-            0f, 0f, 0f,
-            0f, 1f, 0f
+            0f, 2f, 8f,   // Позиция камеры
+            0f, 0f, 0f,   // Точка, куда смотрим
+            0f, 1f, 0f    // Вектор "вверх"
         )
 
         // Модель (Луна вращается)
@@ -122,15 +129,21 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.multiplyMM(mvMatrix, 0, viewMatrix, 0, modelMatrix, 0)
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvMatrix, 0)
 
+        // Вычисляем матрицу нормалей (транспонированная обратная от MV)
+        Matrix.invertM(normalMatrix, 0, mvMatrix, 0)
+        Matrix.transposeM(normalMatrix, 0, normalMatrix, 0)
+
         // Передаем матрицы в шейдер
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
         GLES20.glUniformMatrix4fv(mvMatrixHandle, 1, false, mvMatrix, 0)
+        GLES20.glUniformMatrix4fv(normalMatrixHandle, 1, false, normalMatrix, 0)
 
         // Передаем параметры освещения
         GLES20.glUniform3f(lightPosHandle, lightPos[0], lightPos[1], lightPos[2])
         GLES20.glUniform4fv(lightAmbientHandle, 1, lightAmbient, 0)
         GLES20.glUniform4fv(lightDiffuseHandle, 1, lightDiffuse, 0)
         GLES20.glUniform4fv(lightSpecularHandle, 1, lightSpecular, 0)
+        GLES20.glUniform1f(shininessHandle, materialShininess)
 
         // Активируем текстуру
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -151,17 +164,20 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private fun getVertexShader(): String {
         return """
+            #version 100
             attribute vec3 aPosition;
             attribute vec3 aNormal;
             attribute vec2 aTexCoord;
             
             uniform mat4 uMVPMatrix;
             uniform mat4 uMVMatrix;
+            uniform mat4 uNormalMatrix;
             uniform vec3 uLightPos;
             
             varying vec2 vTexCoord;
             varying vec3 vLightDir;
             varying vec3 vViewDir;
+            varying vec3 vNormal;  // Передаем нормаль во фрагментный шейдер
             varying float vDistance;
             
             void main() {
@@ -170,8 +186,8 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
                 // Позиция вершины в пространстве камеры
                 vec3 position = (uMVMatrix * vec4(aPosition, 1.0)).xyz;
                 
-                // Нормаль в пространстве камеры
-                vec3 normal = normalize(mat3(uMVMatrix) * aNormal);
+                // Нормаль в пространстве камеры (используем специальную матрицу)
+                vNormal = normalize(mat3(uNormalMatrix) * aNormal);
                 
                 // Направление света
                 vec3 lightPosCamera = (uMVMatrix * vec4(uLightPos, 1.0)).xyz;
@@ -180,7 +196,7 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
                 // Направление к камере
                 vViewDir = normalize(-position);
                 
-                // Расстояние до источника света (для затухания)
+                // Расстояние до источника света
                 vDistance = length(lightPosCamera - position);
                 
                 vTexCoord = aTexCoord;
@@ -190,43 +206,52 @@ class MoonRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private fun getFragmentShader(): String {
         return """
+            #version 100
             precision mediump float;
             
             varying vec2 vTexCoord;
             varying vec3 vLightDir;
             varying vec3 vViewDir;
+            varying vec3 vNormal;  // Нормаль из вершинного шейдера
             varying float vDistance;
             
             uniform sampler2D uTexture;
             uniform vec4 uLightAmbient;
             uniform vec4 uLightDiffuse;
             uniform vec4 uLightSpecular;
+            uniform float uShininess;
             
             void main() {
                 vec4 texColor = texture2D(uTexture, vTexCoord);
                 
-                // Нормализуем векторы
+                // Нормализуем все векторы
                 vec3 L = normalize(vLightDir);
                 vec3 V = normalize(vViewDir);
-                vec3 N = vec3(0.0, 0.0, 1.0); // Нормаль в пространстве камеры
+                vec3 N = normalize(vNormal);  // ← ТЕПЕРЬ НОРМАЛЬ ПРАВИЛЬНАЯ!
                 
                 // Модель освещения Фонга
-                // Ambient (фоновое)
+                
+                // 1. Ambient component (фоновое освещение)
                 vec4 ambient = uLightAmbient * texColor;
                 
-                // Diffuse (рассеянный свет)
+                // 2. Diffuse component (рассеянный свет) - закон Ламберта
                 float diff = max(dot(N, L), 0.0);
                 vec4 diffuse = uLightDiffuse * texColor * diff;
                 
-                // Specular (зеркальный свет)
-                vec3 R = reflect(-L, N);
-                float spec = pow(max(dot(R, V), 0.0), 32.0);
+                // 3. Specular component (зеркальный блик) - Фонг
+                vec3 R = reflect(-L, N);  // Вектор отражения
+                float spec = 0.0;
+                if (diff > 0.0) {
+                    spec = pow(max(dot(R, V), 0.0), uShininess);
+                }
                 vec4 specular = uLightSpecular * spec;
                 
-                // Затухание света с расстоянием
+                // Затухание света с расстоянием (attenuation)
                 float attenuation = 1.0 / (1.0 + 0.1 * vDistance + 0.01 * vDistance * vDistance);
                 
+                // Финальный цвет = ambient + (diffuse + specular) * attenuation
                 vec4 finalColor = ambient + (diffuse + specular) * attenuation;
+                
                 gl_FragColor = finalColor;
             }
         """.trimIndent()
